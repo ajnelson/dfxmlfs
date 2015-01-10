@@ -50,6 +50,11 @@ class Xmp(fuse.Fuse):
         self.root = '/'
         self.file_class = self.XmpFile
 
+    def main(self):
+        rc = Fuse.main(self)
+        _logger.debug("Fuse.main(self) = %r." % rc)
+        return rc
+
 #    def mythread(self):
 #
 #        """
