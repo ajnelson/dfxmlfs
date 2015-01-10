@@ -7,13 +7,13 @@
 #    See the file COPYING.
 #
 
-import os, sys
-from errno import *
-from stat import *
+import os
+import sys
+import errno
+import stat
 import fcntl
 
 import fuse
-from fuse import Fuse
 
 
 if not hasattr(fuse, '__version__'):
@@ -36,11 +36,11 @@ def flag2mode(flags):
     return m
 
 
-class Xmp(Fuse):
+class Xmp(fuse.Fuse):
 
     def __init__(self, *args, **kw):
 
-        Fuse.__init__(self, *args, **kw)
+        fuse.Fuse.__init__(self, *args, **kw)
 
         # do stuff to set up your filesystem here, if you want
         #import thread
@@ -113,7 +113,7 @@ class Xmp(Fuse):
 
     def access(self, path, mode):
         if not os.access("." + path, mode):
-            return -EACCES
+            return -errno.EACCES
 
 #    This is how we could add stub extended attribute handlers...
 #    (We can't have ones which aptly delegate requests to the underlying fs
@@ -229,14 +229,14 @@ class Xmp(Fuse):
                    fcntl.F_RDLCK : fcntl.LOCK_SH,
                    fcntl.F_WRLCK : fcntl.LOCK_EX }[kw['l_type']]
             if cmd == fcntl.F_GETLK:
-                return -EOPNOTSUPP
+                return -errno.EOPNOTSUPP
             elif cmd == fcntl.F_SETLK:
                 if op != fcntl.LOCK_UN:
                     op |= fcntl.LOCK_NB
             elif cmd == fcntl.F_SETLKW:
                 pass
             else:
-                return -EINVAL
+                return -errno.EINVAL
 
             fcntl.lockf(self.fd, op, kw['l_start'], kw['l_len'])
 
@@ -247,7 +247,7 @@ def main():
     usage = """
 Userspace nullfs-alike: mirror the filesystem tree from some point on.
 
-""" + Fuse.fusage
+""" + fuse.Fuse.fusage
 
     server = Xmp(version="%prog " + fuse.__version__,
                  usage=usage)
