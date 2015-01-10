@@ -51,7 +51,7 @@ class Xmp(fuse.Fuse):
         self.file_class = self.XmpFile
 
     def main(self):
-        rc = Fuse.main(self)
+        rc = fuse.Fuse.main(self)
         _logger.debug("Fuse.main(self) = %r." % rc)
         return rc
 
