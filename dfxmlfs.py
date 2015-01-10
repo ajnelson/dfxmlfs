@@ -62,7 +62,9 @@ class Xmp(fuse.Fuse):
 #            print "mythread: ticking"
 
     def getattr(self, path):
-        return os.lstat("." + path)
+        s = os.lstat("." + path)
+        _logger.debug("s = %r." % s)
+        return s
 
     def readlink(self, path):
         return os.readlink("." + path)
