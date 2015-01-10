@@ -12,9 +12,11 @@ import sys
 import errno
 import stat
 import fcntl
+import logging
 
 import fuse
 
+_logger = logging.getLogger(os.path.basename(__file__))
 
 if not hasattr(fuse, '__version__'):
     raise RuntimeError, \
@@ -262,6 +264,8 @@ Userspace nullfs-alike: mirror the filesystem tree from some point on.
     except OSError:
         print >> sys.stderr, "can't enter root of underlying filesystem"
         sys.exit(1)
+
+    logging.basicConfig(level=logging.DEBUG if "debug" in server.fuse_args.optlist else logging.INFO)
 
     server.main()
 
