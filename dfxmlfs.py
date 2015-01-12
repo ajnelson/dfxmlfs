@@ -16,10 +16,6 @@ import logging
 
 import fuse
 
-import Objects
-
-_logger = logging.getLogger(os.path.basename(__file__))
-
 if not hasattr(fuse, '__version__'):
     raise RuntimeError, \
         "your fuse-py doesn't know of fuse.__version__, probably it's too old."
@@ -50,27 +46,6 @@ class Xmp(fuse.Fuse):
         #import thread
         #thread.start_new_thread(self.mythread, ())
         self.file_class = self.XmpFile
-
-    def main(self):
-        #Find where the xmlfile is being stashed...
-        #_logger.debug("dir(self) = %r." % dir(self))
-        #_logger.debug("self.fuse_args = %r." % self.fuse_args)
-        #_logger.debug("dir(self.fuse_args) = %r." % dir(self.fuse_args))
-        #_logger.debug("dir(self.fuse_args.optdict) = %r." % self.fuse_args.optdict)
-        #_logger.debug("dir(self.fuse_args.optlist) = %r." % self.fuse_args.optlist)
-        #_logger.debug("self.xmlfile = %r." % self.xmlfile)
-
-        _logger.debug("Parsing DFXML file...")
-        self.objects_by_path = dict()
-        for (event, obj) in Objects.iterparse(self.xmlfile):
-            if not isinstance(obj, Objects.FileObject):
-                continue
-            _logger.debug("File: %r." % obj.filename)
-            self.objects_by_path[obj.filename] = obj
-        _logger.debug("Parsed DFXML file.")
-        _logger.debug("self.objects_by_path = %r." % self.objects_by_path)
-
-        return fuse.Fuse.main(self)
 
 #    def mythread(self):
 #
@@ -287,11 +262,7 @@ Userspace nullfs-alike: mirror the filesystem tree from some point on.
     server = Xmp(version="%prog " + fuse.__version__,
                  usage=usage)
 
-    server.parser.add_option(mountopt="xmlfile", metavar="XMLFILE",
-                             help="Mount this XML file")
     server.parse(values=server, errex=1)
-
-    logging.basicConfig(level=logging.DEBUG if "debug" in server.fuse_args.optlist else logging.INFO)
 
     server.main()
 
