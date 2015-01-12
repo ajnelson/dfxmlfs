@@ -51,6 +51,16 @@ class Xmp(fuse.Fuse):
         self.file_class = self.XmpFile
 
     def main(self):
+        #Find where the xmlfile is being stashed...
+        #_logger.debug("dir(self) = %r." % dir(self))
+        #_logger.debug("self.fuse_args = %r." % self.fuse_args)
+        #_logger.debug("dir(self.fuse_args) = %r." % dir(self.fuse_args))
+        #_logger.debug("dir(self.fuse_args.optdict) = %r." % self.fuse_args.optdict)
+        #_logger.debug("dir(self.fuse_args.optlist) = %r." % self.fuse_args.optlist)
+        #_logger.debug("self.xmlfile = %r." % self.xmlfile)
+
+        _logger.debug("Parsing DFXML file...")
+        _logger.debug("Parsed DFXML file.")
         rc = fuse.Fuse.main(self)
         _logger.debug("Fuse.main(self) = %r." % rc)
         return rc
@@ -261,9 +271,9 @@ Userspace nullfs-alike: mirror the filesystem tree from some point on.
     server = Xmp(version="%prog " + fuse.__version__,
                  usage=usage)
 
-    server.parser.add_option(mountopt="root", metavar="PATH", default='/',
-                             help="mirror filesystem from under PATH [default: %default]")
-    server.parse(values=server, errex=1)
+    server.parser.add_option(mountopt="xmlfile", metavar="XMLFILE",
+                             help="Mount this XML file")
+    fargs = server.parse(values=server, errex=1)
 
     try:
         if server.fuse_args.mount_expected():
@@ -273,6 +283,8 @@ Userspace nullfs-alike: mirror the filesystem tree from some point on.
         sys.exit(1)
 
     logging.basicConfig(level=logging.DEBUG if "debug" in server.fuse_args.optlist else logging.INFO)
+
+    #_logger.debug("fargs = %r." % fargs)
 
     server.main()
 
