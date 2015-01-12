@@ -26,18 +26,44 @@ fuse.fuse_python_api = (0, 2)
 hello_path = '/hello'
 hello_str = 'Hello World!\n'
 
-class MyStat(fuse.Stat):
-    def __init__(self):
-        self.st_mode = 0
-        self.st_ino = 0
-        self.st_dev = 0
-        self.st_nlink = 0
-        self.st_uid = 0
-        self.st_gid = 0
-        self.st_size = 0
-        self.st_atime = 0
-        self.st_mtime = 0
-        self.st_ctime = 0
+def obj_to_stat(obj):
+    st = fuse.Stat()
+
+    st.st_ino = obj.inode
+
+    st.st_dev = 0
+
+    st.st_nlink = obj.nlink
+
+    st.st_size = obj.filesize
+
+    #Don't try translating user IDs for now - complicated in NTFS.
+    st.st_uid = 0
+    st.st_gid = 0
+
+    if fo.name_type == "r":
+        st.st_mode = 0o0444 | stat.S_IFREG
+    elif fo.name_type == "d":
+        st.st_mode = 0o0555 | stat.S_IFDIR
+    else:
+        st.st_mode = 0o0444
+
+    if obj.atime is None:
+        st.st_atime = 0
+    else:
+        st.st_atime = obj.atime.timestamp()
+
+    if obj.mtime is None:
+        st.st_mtime = 0
+    else:
+        st.st_mtime = obj.mtime.timestamp()
+
+    if obj.crtime is None:
+        st.st_ctime = 0
+    else:
+        st.st_ctime = obj.crtime.timestamp()
+
+    return st
 
 class HelloFS(fuse.Fuse):
 
@@ -58,16 +84,15 @@ class HelloFS(fuse.Fuse):
         return fuse.Fuse.main(self)
 
     def getattr(self, path):
-        st = MyStat()
         if path == '/':
-            st.st_mode = stat.S_IFDIR | 0755
+            st = fuse.Stat()
+            st.st_mode = stat.S_IFDIR | 0o555
             st.st_nlink = 2
-        elif path == hello_path:
-            st.st_mode = stat.S_IFREG | 0444
-            st.st_nlink = 1
-            st.st_size = len(hello_str)
         else:
-            return -errno.ENOENT
+            obj = self.objects_by_path.get(path)
+            if obj is None:
+                return -errno.ENOENT
+            st = obj_to_stat(obj)
         return st
 
     def readdir(self, path, offset):
