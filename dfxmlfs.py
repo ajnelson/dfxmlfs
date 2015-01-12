@@ -16,6 +16,8 @@ import logging
 
 import fuse
 
+import Objects
+
 _logger = logging.getLogger(os.path.basename(__file__))
 
 if not hasattr(fuse, '__version__'):
@@ -47,7 +49,6 @@ class Xmp(fuse.Fuse):
         # do stuff to set up your filesystem here, if you want
         #import thread
         #thread.start_new_thread(self.mythread, ())
-        self.root = '/'
         self.file_class = self.XmpFile
 
     def main(self):
@@ -60,10 +61,16 @@ class Xmp(fuse.Fuse):
         #_logger.debug("self.xmlfile = %r." % self.xmlfile)
 
         _logger.debug("Parsing DFXML file...")
+        self.objects_by_path = dict()
+        for (event, obj) in Objects.iterparse(self.xmlfile):
+            if not isinstance(obj, Objects.FileObject):
+                continue
+            _logger.debug("File: %r." % obj.filename)
+            self.objects_by_path[obj.filename] = obj
         _logger.debug("Parsed DFXML file.")
-        rc = fuse.Fuse.main(self)
-        _logger.debug("Fuse.main(self) = %r." % rc)
-        return rc
+        _logger.debug("self.objects_by_path = %r." % self.objects_by_path)
+
+        return fuse.Fuse.main(self)
 
 #    def mythread(self):
 #
@@ -89,36 +96,44 @@ class Xmp(fuse.Fuse):
             yield fuse.Direntry(e)
 
     def unlink(self, path):
-        os.unlink("." + path)
+        """No-op."""
+        pass
 
     def rmdir(self, path):
-        os.rmdir("." + path)
+        """No-op."""
+        pass
 
     def symlink(self, path, path1):
-        os.symlink(path, "." + path1)
+        """No-op."""
+        pass
 
     def rename(self, path, path1):
-        os.rename("." + path, "." + path1)
+        """No-op."""
+        pass
 
     def link(self, path, path1):
-        os.link("." + path, "." + path1)
+        """No-op."""
+        pass
 
     def chmod(self, path, mode):
-        os.chmod("." + path, mode)
+        """No-op."""
+        pass
 
     def chown(self, path, user, group):
-        os.chown("." + path, user, group)
+        """No-op."""
+        pass
 
     def truncate(self, path, len):
-        f = open("." + path, "a")
-        f.truncate(len)
-        f.close()
+        """No-op."""
+        pass
 
     def mknod(self, path, mode, dev):
-        os.mknod("." + path, mode, dev)
+        """No-op."""
+        pass
 
     def mkdir(self, path, mode):
-        os.mkdir("." + path, mode)
+        """No-op."""
+        pass
 
     def utime(self, path, times):
         os.utime("." + path, times)
@@ -176,7 +191,8 @@ class Xmp(fuse.Fuse):
         return os.statvfs(".")
 
     def fsinit(self):
-        os.chdir(self.root)
+        """No-op."""
+        pass
 
     class XmpFile(object):
 
@@ -273,18 +289,9 @@ Userspace nullfs-alike: mirror the filesystem tree from some point on.
 
     server.parser.add_option(mountopt="xmlfile", metavar="XMLFILE",
                              help="Mount this XML file")
-    fargs = server.parse(values=server, errex=1)
-
-    try:
-        if server.fuse_args.mount_expected():
-            os.chdir(server.root)
-    except OSError:
-        print >> sys.stderr, "can't enter root of underlying filesystem"
-        sys.exit(1)
+    server.parse(values=server, errex=1)
 
     logging.basicConfig(level=logging.DEBUG if "debug" in server.fuse_args.optlist else logging.INFO)
-
-    #_logger.debug("fargs = %r." % fargs)
 
     server.main()
 
