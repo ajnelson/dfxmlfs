@@ -100,11 +100,18 @@ class HelloFS(fuse.Fuse):
             yield fuse.Direntry(r)
 
     def open(self, path, flags):
-        if path != hello_path:
+        #Existence check
+        if path == "/":
+            pass
+        elif not path in self.objects_by_path:
             return -errno.ENOENT
+
+        #Access check - read-only
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
+
+        return 0
 
     def read(self, path, size, offset):
         if path != hello_path:
