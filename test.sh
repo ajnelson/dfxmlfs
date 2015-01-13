@@ -8,7 +8,7 @@ if [ ! -d testdir ]; then
 fi
 
 #Debug implies foreground mode, so sleep to allow mount to finish before using directory.
-python dfxmlfs-hello.py -d -o xmlfile=test.xml testdir >stdout.log 2>stderr.log &
+python2.7 dfxmlfs.py -d -o xmlfile=test.xml testdir >stdout.log 2>stderr.log &
 sleep 1
 
 ls testdir
