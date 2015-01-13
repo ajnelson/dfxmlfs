@@ -76,35 +76,108 @@ def obj_to_stat(obj):
 
 class HelloFS(fuse.Fuse):
 
+    def __init__(self, *args, **kw):
+        self._referenced_inodes = set()
+        self._last_assigned_inode_number = 2
+
+        fuse.Fuse.__init__(self, *args, **kw)
+
+    def _next_inode_number(self):
+        while self._last_assigned_inode_number < 2**32:
+            self._last_assigned_inode_number += 1
+            if not self._last_assigned_inode_number in self.referenced_inodes:
+                break
+        if self._last_assigned_inode_number == 2**32:
+            raise ValueError("Out of inode numbers.")
+        return self._last_assigned_inode_number
+
     def main(self):
+        #_logger.debug("dir(self) = %r." % dir(self))
+
         if not hasattr(self, "imgfile"):
             self.imgfile = None
+        else:
+            _logger.debug("Getting real imgfile path.")
+            self.imgfile = os.path.realpath(self.imgfile)
+            _logger.debug("self.imgfile = %r." % self.imgfile)
 
         if not hasattr(self, "xmlfile"):
             raise RuntimeError("-o xmlfile must be passed on the command line.")
 
         _logger.info("Parsing DFXML file...")
 
-        #Key: Absolute path
+        #Key: Absolute path, including partition designation
         #Value: Objects.FileObject
         self.objects_by_path = dict()
+
         self.dir_lists_by_path = collections.defaultdict(list)
 
-        for (event, obj) in Objects.iterparse(self.xmlfile):
+        self.volumes = dict()
+
+        objects_without_inode_numbers = []
+
+        for (tup_no, (event, obj)) in enumerate(Objects.iterparse(self.xmlfile)):
             if not isinstance(obj, Objects.FileObject):
                 continue
-            filepath = obj.filename or "" #In case of None for root
+            #_logger.debug("obj.filename = %r." % obj.filename)
+
+            alloc = obj.is_allocated()
+            if alloc is None:
+                #_logger.debug("Assuming allocated.")
+                pass
+            elif alloc == False:
+                #_logger.debug("Not allocated.")
+                continue
+            if obj.filename is None:
+                #_logger.debug("Null filename.")
+                continue
+            if obj.filename in [".", ".."]:
+                #_logger.debug("Dot-dir filename.")
+                continue
+
+            partition_dir = "partition_" + ("null" if obj.partition is None else str(obj.partition))
+            if obj.partition not in self.volumes:
+                self.volumes[obj.partition] = obj.volume_object #Might be null.
+
+            #Every file should end up with an inode number; but they should be assigned after the stream is all visited.
+            if obj.inode is None:
+                objects_without_inode_numbers.append(obj)
+
+            filepath = partition_dir + "/" + obj.filename
             self.objects_by_path["/" + filepath] = obj
 
             basename = os.path.basename(filepath)
-            if basename == "":
-                continue
-
             dirname = os.path.dirname(filepath)
+
             self.dir_lists_by_path["/" + dirname].append(basename)
+
+            #Shorten reading DFXML files in debug settings
+            if "debug" in self.fuse_args.optlist and tup_no > 50:
+                break
+
+        #Assign inode numbers for objects that were in the stream first
+        for obj in objects_without_inode_numbers:
+            obj.inode = self._next_inode_number()
+
+        #Creating the top-level partition directories a loop ago means they need to be created again for the root directory.
+        for partition_number in self.volumes:
+            partition_dir = "partition_" + ("null" if partition_number is None else str(partition_number))
+
+            partition_obj = Objects.FileObject()
+            partition_obj.filename = partition_dir
+            partition_obj.filesize = 0
+            partition_obj.name_type = "d"
+            partition_obj.alloc = True
+            partition_obj.inode = self._next_inode_number()
+            partition_obj.nlink = 2 #This should be adjusted to be 1 + # of directory children.
+            self.objects_by_path["/" + partition_dir] = partition_obj
+
+            self.dir_lists_by_path["/"].append(partition_dir)
+
         _logger.info("Parsed DFXML file.")
         #_logger.debug("self.objects_by_path = %r." % self.objects_by_path)
         #_logger.debug("self.dir_lists_by_path = %r." % self.dir_lists_by_path)
+        #_logger.debug("self.volumes = %r." % self.volumes)
 
         return fuse.Fuse.main(self)
 
@@ -118,6 +191,8 @@ class HelloFS(fuse.Fuse):
             if obj is None:
                 return -errno.ENOENT
             st = obj_to_stat(obj)
+            #for field in _stat_fields:
+            #    _logger.debug("st.%s = %r." % (field, getattr(st, field)))
         return st
 
     def readdir(self, path, offset):
@@ -143,7 +218,7 @@ class HelloFS(fuse.Fuse):
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
 
-        return 0
+        #return 0
 
     def read(self, path, size, offset):
         if self.imgfile is None:
@@ -154,7 +229,9 @@ class HelloFS(fuse.Fuse):
         #TODO Isn't this handled by getattr?
         obj = self.objects_by_path.get(path)
         if obj is None:
+            _logger.debug("Could not get file for reading: %r." % path)
             return -errno.ENOENT
+        _logger.debug("Found object at path: %r." % path)
 
         #File type check
         if obj.name_type is None:
@@ -162,29 +239,39 @@ class HelloFS(fuse.Fuse):
             pass
         elif obj.name_type == "d":
             return -errno.EISDIR
+        _logger.debug("File type check passed.")
 
         #File size check
         if obj.filesize == 0:
             return bytes()
+        _logger.debug("File size check passed.")
 
         #Data addresses check
         retval = bytes()
         bytes_to_skip = offset
         bytes_to_read = size
         for buf in obj.extract_facet("content", self.imgfile):
+            _logger.debug("Inspecting %d-byte buffer." % len(buf))
             if bytes_to_skip < 0:
                 break
 
             #This is an inefficient linear scan from the beginning of the buffer.  Would be better to use the length of the byte runs, but that will mean a lot of code duplication.
+            #The inefficiency here is reading from the beginning each time.
             blen = len(buf)
             if bytes_to_skip < blen:
                 if bytes_to_skip + bytes_to_read > blen:
                     bytes_to_read = blen - bytes_to_skip
-                #This loop will run a small number of types, so += shouldn't be too awful for starters.
+                #This loop will run a small number of times (read is called on 4KiB-or-so chunks), so += shouldn't be too awful for starters.
                 retval += buf[bytes_to_skip:bytes_to_skip + bytes_to_read]
             bytes_to_skip -= blen
 
+        _logger.debug("Returning %d bytes." % len(retval))
         return retval
+
+    @property
+    def referenced_inodes(self):
+        """Set of inode numbers referenced in the backing DFXML file.  Used oo inodes can be invented for virtual files."""
+        return self._referenced_inodes
 
 def main():
     usage="""
@@ -195,7 +282,7 @@ Userspace DFXML file system.
                      usage=usage,
                      dash_s_do='setsingle')
 
-    server.parser.add_option(mountopt="imgfile", metavar="XMLFILE",
+    server.parser.add_option(mountopt="imgfile", metavar="IMGFILE",
                              help="Use this backing disk image file")
     server.parser.add_option(mountopt="xmlfile", metavar="XMLFILE",
                              help="Mount this XML file")
