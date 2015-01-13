@@ -51,13 +51,13 @@ def obj_to_stat(obj):
     else:
         st.st_mode = 0o0444
 
-    _logger.debug("Setting timestamps.")
+    #_logger.debug("Setting timestamps.")
     if obj.atime is None:
         st.st_atime = 0
     else:
         st.st_atime = obj.atime.timestamp
 
-    _logger.debug("Set a timestamp.")
+    #_logger.debug("Set a timestamp.")
     if obj.mtime is None:
         st.st_mtime = 0
     else:
@@ -68,7 +68,7 @@ def obj_to_stat(obj):
     else:
         st.st_ctime = obj.crtime.timestamp
 
-    _logger.debug("st = %r." % st)
+    #_logger.debug("st = %r." % st)
     #for field in _stat_fields:
     #    _logger.debug("st.%s = %r." % (field, getattr(st, field)))
     return st
@@ -82,7 +82,7 @@ class HelloFS(fuse.Fuse):
         if not hasattr(self, "xmlfile"):
             raise RuntimeError("-o xmlfile must be passed on the command line.")
 
-        _logger.debug("Parsing DFXML file...")
+        _logger.info("Parsing DFXML file...")
 
         #Key: Absolute path
         #Value: Objects.FileObject
@@ -91,9 +91,9 @@ class HelloFS(fuse.Fuse):
         for (event, obj) in Objects.iterparse(self.xmlfile):
             if not isinstance(obj, Objects.FileObject):
                 continue
-            _logger.debug("File: %r." % obj.filename)
+            #_logger.debug("File: %r." % obj.filename)
             self.objects_by_path["/" + obj.filename] = obj
-        _logger.debug("Parsed DFXML file.")
+        _logger.info("Parsed DFXML file.")
         #_logger.debug("self.objects_by_path = %r." % self.objects_by_path)
 
         return fuse.Fuse.main(self)
@@ -108,7 +108,6 @@ class HelloFS(fuse.Fuse):
             if obj is None:
                 return -errno.ENOENT
             st = obj_to_stat(obj)
-        _logger.debug("dir(st) = %r." % dir(st))
         return st
 
     def readdir(self, path, offset):
