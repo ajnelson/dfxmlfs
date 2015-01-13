@@ -2,4 +2,8 @@
 
 set -x
 
-fusermount -u testdir || umount testdir
+if [ "x$(which fusermount)" == "x" ]; then
+  umount testdir
+else
+  fusermount -u testdir 
+fi
