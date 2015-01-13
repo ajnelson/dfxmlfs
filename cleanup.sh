@@ -2,4 +2,4 @@
 
 set -x
 
-fusermount -u testdir
+fusermount -u testdir || umount testdir
