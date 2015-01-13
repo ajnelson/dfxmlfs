@@ -14,5 +14,6 @@ sleep 1
 ls testdir
 ls -a testdir
 ls -la testdir
+find testdir | sort
 
 ./cleanup.sh
