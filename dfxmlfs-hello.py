@@ -10,6 +10,7 @@ import os
 import stat
 import errno
 import logging
+import collections
 
 import fuse
 
@@ -87,14 +88,23 @@ class HelloFS(fuse.Fuse):
         #Key: Absolute path
         #Value: Objects.FileObject
         self.objects_by_path = dict()
+        self.dir_lists_by_path = collections.defaultdict(list)
 
         for (event, obj) in Objects.iterparse(self.xmlfile):
             if not isinstance(obj, Objects.FileObject):
                 continue
-            #_logger.debug("File: %r." % obj.filename)
-            self.objects_by_path["/" + obj.filename] = obj
+            filepath = obj.filename or "" #In case of None for root
+            self.objects_by_path["/" + filepath] = obj
+
+            basename = os.path.basename(filepath)
+            if basename == "":
+                continue
+
+            dirname = os.path.dirname(filepath)
+            self.dir_lists_by_path["/" + dirname].append(basename)
         _logger.info("Parsed DFXML file.")
         #_logger.debug("self.objects_by_path = %r." % self.objects_by_path)
+        #_logger.debug("self.dir_lists_by_path = %r." % self.dir_lists_by_path)
 
         return fuse.Fuse.main(self)
 
@@ -111,13 +121,18 @@ class HelloFS(fuse.Fuse):
         return st
 
     def readdir(self, path, offset):
-        for r in  '.', '..':
-            yield fuse.Direntry(r)
-        for filename in self.objects_by_path:
-            yield fuse.Direntry(filename[1:])
+        dir_list = self.dir_lists_by_path.get(path)
+        if dir_list is None:
+            _logger.error("readdir failed to find a directory: %r." % path)
+        else:
+            for r in  '.', '..':
+                yield fuse.Direntry(r)
+            for filename in dir_list:
+                yield fuse.Direntry(filename)
 
     def open(self, path, flags):
         #Existence check
+        #TODO Isn't this handled by getattr?
         if path == "/":
             pass
         elif not path in self.objects_by_path:
@@ -136,6 +151,7 @@ class HelloFS(fuse.Fuse):
             return -errno.EIO
 
         #Existence check
+        #TODO Isn't this handled by getattr?
         obj = self.objects_by_path.get(path)
         if obj is None:
             return -errno.ENOENT
