@@ -76,6 +76,9 @@ def obj_to_stat(obj):
 class HelloFS(fuse.Fuse):
 
     def main(self):
+        if not hasattr(self, "imgfile"):
+            self.imgfile = None
+
         if not hasattr(self, "xmlfile"):
             raise RuntimeError("-o xmlfile must be passed on the command line.")
 
@@ -129,16 +132,44 @@ class HelloFS(fuse.Fuse):
         return 0
 
     def read(self, path, size, offset):
-        if path != hello_path:
+        if self.imgfile is None:
+            _logger.error("Cannot read file without backing disk image.")
+            return -errno.EIO
+
+        #Existence check
+        obj = self.objects_by_path.get(path)
+        if obj is None:
             return -errno.ENOENT
-        slen = len(hello_str)
-        if offset < slen:
-            if offset + size > slen:
-                size = slen - offset
-            buf = hello_str[offset:offset+size]
-        else:
-            buf = ''
-        return buf
+
+        #File type check
+        if obj.name_type is None:
+            #Assume regular file.
+            pass
+        elif obj.name_type == "d":
+            return -errno.EISDIR
+
+        #File size check
+        if obj.filesize == 0:
+            return bytes()
+
+        #Data addresses check
+        retval = bytes()
+        bytes_to_skip = offset
+        bytes_to_read = size
+        for buf in obj.extract_facet("content", self.imgfile):
+            if bytes_to_skip < 0:
+                break
+
+            #This is an inefficient linear scan from the beginning of the buffer.  Would be better to use the length of the byte runs, but that will mean a lot of code duplication.
+            blen = len(buf)
+            if bytes_to_skip < blen:
+                if bytes_to_skip + bytes_to_read > blen:
+                    bytes_to_read = blen - bytes_to_skip
+                #This loop will run a small number of types, so += shouldn't be too awful for starters.
+                retval += buf[bytes_to_skip:bytes_to_skip + bytes_to_read]
+            bytes_to_skip -= blen
+
+        return retval
 
 def main():
     usage="""
@@ -149,6 +180,8 @@ Userspace DFXML file system.
                      usage=usage,
                      dash_s_do='setsingle')
 
+    server.parser.add_option(mountopt="imgfile", metavar="XMLFILE",
+                             help="Use this backing disk image file")
     server.parser.add_option(mountopt="xmlfile", metavar="XMLFILE",
                              help="Mount this XML file")
     server.parse(values=server, errex=1)
