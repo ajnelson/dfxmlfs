@@ -12,5 +12,7 @@ python dfxmlfs-hello.py -d -o xmlfile=test.xml testdir >stdout.log 2>stderr.log 
 sleep 1
 
 ls testdir
+ls -a testdir
+ls -la testdir
 
 ./cleanup.sh
