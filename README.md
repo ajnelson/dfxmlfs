@@ -11,9 +11,16 @@ Some tools exist to deal with partition managers (e.g. [Disktype](https://github
 This tool exists to deal with the file system presentation.  Conceptually, you could equate this tool to running `ls -lR`, capturing its output to a text file, shipping that text file to another computer, and navigating that file *as a mounted file system*.  The difference is, instead of the output of `ls -l`, this tool uses [Digital Forensics XML](http://forensicswiki.org/wiki/DFXML), a well-structured language for file system metadata.
 
 
+## License
+
+Licensing is under discussion.  You can safely assume this is and will remain open-source code, but the exact variant and declaration needs to be picked.
+
+For now, assume LGPL v2.1, the original FUSE-Python license.
+
+
 ## Usage
 
-Use a Python version that has [`fuse-python`](http://sourceforge.net/p/fuse/fuse-python/ci/master/tree/) available.  `fuse-python` is a Python 2 module at the moment, so this example uses `python2.7`:
+Use a Python version that has [`fuse-python`](http://sourceforge.net/p/fuse/fuse-python/ci/master/tree/) available.  FUSE-Python is a Python 2 module at the moment, so this example uses `python2.7`:
 
     python2.7 dfxmlfs.py \
       -o xmlfile=$path_to_dfxml_file \

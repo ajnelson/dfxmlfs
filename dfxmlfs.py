@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-#    Copyright (C) 2006  Andrew Straw  <strawman@astraw.com>
+#    HelloFS Copyright (C) 2006  Andrew Straw  <strawman@astraw.com>
+#    (DRAFT) DFXMLFS Copyright (C) 2015  Prometheus Computing, LLC.
+#    (DRAFT)  Implemented by Alex Nelson <a.nelson@prometheuscomputing.com>
 #
-#    This program can be distributed under the terms of the GNU LGPL.
+#    This program can be distributed under the terms of the GNU LGPL v2.1.
 #    See the file COPYING.
 #
+
+__version__ = "0.0.1"
 
 import os
 import stat
@@ -24,10 +28,9 @@ if not hasattr(fuse, '__version__'):
 
 fuse.fuse_python_api = (0, 2)
 
-hello_path = '/hello'
-hello_str = 'Hello World!\n'
-
+#This list is for debug purposes.
 _stat_fields = ['st_atime', 'st_ctime', 'st_dev', 'st_gid', 'st_ino', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid']
+
 def obj_to_stat(obj):
     st = fuse.Stat()
     #for field in _stat_fields:
@@ -74,7 +77,7 @@ def obj_to_stat(obj):
     #    _logger.debug("st.%s = %r." % (field, getattr(st, field)))
     return st
 
-class HelloFS(fuse.Fuse):
+class DFXMLFS(fuse.Fuse):
 
     def __init__(self, *args, **kw):
         self._referenced_inodes = set()
@@ -97,9 +100,9 @@ class HelloFS(fuse.Fuse):
         if not hasattr(self, "imgfile"):
             self.imgfile = None
         else:
-            _logger.debug("Getting real imgfile path.")
+            #_logger.debug("Getting real imgfile path.")
             self.imgfile = os.path.realpath(self.imgfile)
-            _logger.debug("self.imgfile = %r." % self.imgfile)
+            #_logger.debug("self.imgfile = %r." % self.imgfile)
 
         if not hasattr(self, "xmlfile"):
             raise RuntimeError("-o xmlfile must be passed on the command line.")
@@ -231,7 +234,7 @@ class HelloFS(fuse.Fuse):
         if obj is None:
             _logger.debug("Could not get file for reading: %r." % path)
             return -errno.ENOENT
-        _logger.debug("Found object at path: %r." % path)
+        #_logger.debug("Found object at path: %r." % path)
 
         #File type check
         if obj.name_type is None:
@@ -239,19 +242,19 @@ class HelloFS(fuse.Fuse):
             pass
         elif obj.name_type == "d":
             return -errno.EISDIR
-        _logger.debug("File type check passed.")
+        #_logger.debug("File type check passed.")
 
         #File size check
         if obj.filesize == 0:
             return bytes()
-        _logger.debug("File size check passed.")
+        #_logger.debug("File size check passed.")
 
         #Data addresses check
         retval = bytes()
         bytes_to_skip = offset
         bytes_to_read = size
         for buf in obj.extract_facet("content", self.imgfile):
-            _logger.debug("Inspecting %d-byte buffer." % len(buf))
+            #_logger.debug("Inspecting %d-byte buffer." % len(buf))
             if bytes_to_skip < 0:
                 break
 
@@ -265,7 +268,7 @@ class HelloFS(fuse.Fuse):
                 retval += buf[bytes_to_skip:bytes_to_skip + bytes_to_read]
             bytes_to_skip -= blen
 
-        _logger.debug("Returning %d bytes." % len(retval))
+        #_logger.debug("Returning %d bytes." % len(retval))
         return retval
 
     @property
@@ -278,7 +281,7 @@ def main():
 Userspace DFXML file system.
 
 """ + fuse.Fuse.fusage
-    server = HelloFS(version="%prog " + fuse.__version__,
+    server = DFXMLFS(version="%prog " + fuse.__version__,
                      usage=usage,
                      dash_s_do='setsingle')
 
