@@ -13,9 +13,7 @@ This tool exists to deal with the file system presentation.  Conceptually, you c
 
 ## License
 
-Licensing is under discussion.  You can safely assume this is and will remain open-source code, but the exact variant and declaration needs to be picked.
-
-For now, assume LGPL v2.1, the original FUSE-Python license.
+LGPL v2.1, inherited from an example file system packaged with the FUSE-Python bindings.
 
 
 ## Usage
