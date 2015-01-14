@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 #    HelloFS Copyright (C) 2006  Andrew Straw  <strawman@astraw.com>
-#    (DRAFT) DFXMLFS Copyright (C) 2015  Prometheus Computing, LLC.
-#    (DRAFT)  Implemented by Alex Nelson <a.nelson@prometheuscomputing.com>
+#
+#    DFXMLFS Copyright (C) 2015  Prometheus Computing, LLC.
+#      Implemented by Alex Nelson <a.nelson@prometheuscomputing.com>
 #
 #    This program can be distributed under the terms of the GNU LGPL v2.1.
 #    See the file COPYING.
