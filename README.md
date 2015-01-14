@@ -18,7 +18,7 @@ LGPL v2.1, inherited from an example file system packaged with the FUSE-Python b
 
 ## Usage
 
-For a demonstration, run the following commands.  The first installs packages; the second and third initialize and download dependent Git repositories; and the last runs the demo code.  
+For a demonstration, run the following commands.  The first installs packages; the second and third initialize and download dependent Git repositories; and the last runs the demo code.  (Note that the dollar sign indicates a value you should replace yourself.)
 
     deps/install_dependent_packages-$your_distro.sh #Requires sudo
     git submodule init
