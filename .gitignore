@@ -1,4 +1,6 @@
+*.E01
 *.pyc
+*.dfxml
 stderr.log
 stdout.log
 test.xml
