@@ -17,7 +17,6 @@ check: ntfs1-gen1.E01.dfxml
 	./test.sh
 
 download: _ntfs1-gen1.E01
-	test -L ntfs1-gen1.E01 && echo ""
 	ewfverify $^ > $^.ewfverify.out.log
 	test $$(grep $(HASH_NTFS1GEN1) $^.ewfverify.out.log | wc -l ) -eq 2 || (echo "ERROR:Expected checksum not found in log.">&2 ; exit 1)
 	rm -f ntfs1-gen1.E01 #Remove old link if it exists
