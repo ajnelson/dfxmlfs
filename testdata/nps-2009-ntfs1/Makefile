@@ -1,5 +1,6 @@
 
 #Run 'make download' to fetch, verify, and link the disk image.
+#Run 'make check' to test file reading
 
 SHELL = /bin/bash
 
@@ -11,6 +12,9 @@ all: ntfs1-gen1.E01.dfxml
 _ntfs1-gen1.E01:
 	rm -f $@
 	wget http://digitalcorpora.org/corpora/disk-images/nps-2009-ntfs1/ntfs1-gen1.E01 -O $@
+
+check: ntfs1-gen1.E01.dfxml
+	./test.sh
 
 download: _ntfs1-gen1.E01
 	test -L ntfs1-gen1.E01 && echo ""
