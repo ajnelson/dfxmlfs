@@ -30,11 +30,13 @@ def main():
         _logger.debug("Recreating SHA-1: %r." % obj.sha1)
 
         checker = hashlib.sha1()
+        bytes_ingested = 0
         with open(path, "rb") as fh:
             while True:
                 buf = fh.read(4096)
                 if len(buf) == 0:
                     break
+                bytes_ingested += len(buf)
                 checker.update(buf)
         checker_sha1 = checker.hexdigest().lower()
         _logger.debug("Hash of content read from file system: %r." % checker_sha1)
@@ -43,6 +45,8 @@ def main():
             hash_mismatches += 1
             _logger.error("Hash mismatch on path: %r." % path)
             _logger.debug("obj.id = %r." % obj.id)
+            _logger.debug("Bytes ingested = %r." % bytes_ingested)
+            _logger.debug("File's size = %r." % obj.filesize)
 
     if hash_mismatches != 0:
         _logger.error("Read incorrect content on %d files." % hash_mismatches)
