@@ -46,7 +46,10 @@ def main():
             _logger.error("Hash mismatch on path: %r." % path)
             _logger.debug("obj.id = %r." % obj.id)
             _logger.debug("Bytes ingested = %r." % bytes_ingested)
-            _logger.debug("File's size = %r." % obj.filesize)
+            _logger.debug("File's size, from XML = %r." % obj.filesize)
+
+            st = os.stat(path)
+            _logger.debug("File's size, from stat = %r." % st.st_size)
 
     if hash_mismatches != 0:
         _logger.error("Read incorrect content on %d files." % hash_mismatches)
