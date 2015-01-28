@@ -222,9 +222,10 @@ class DFXMLFS(fuse.Fuse):
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
 
-        #return 0
+        return 0
 
     def read(self, path, size, offset):
+        _logger.debug("read(%r, %r, %r)" % (path, size, offset))
         if self.imgfile is None:
             _logger.error("Cannot read file without backing disk image.")
             return -errno.EIO
@@ -235,7 +236,7 @@ class DFXMLFS(fuse.Fuse):
         if obj is None:
             _logger.debug("Could not get file for reading: %r." % path)
             return -errno.ENOENT
-        #_logger.debug("Found object at path: %r." % path)
+        _logger.debug("Found object at path: %r." % path)
 
         #File type check
         if obj.name_type is None:
@@ -255,7 +256,7 @@ class DFXMLFS(fuse.Fuse):
         bytes_to_skip = offset
         bytes_to_read = size
         for buf in obj.extract_facet("content", self.imgfile):
-            #_logger.debug("Inspecting %d-byte buffer." % len(buf))
+            _logger.debug("Inspecting %d-byte buffer." % len(buf))
             if bytes_to_skip < 0:
                 break
 
@@ -266,6 +267,7 @@ class DFXMLFS(fuse.Fuse):
                 if bytes_to_skip + bytes_to_read > blen:
                     bytes_to_read = blen - bytes_to_skip
                 #This loop will run a small number of times (read is called on 4KiB-or-so chunks), so += shouldn't be too awful for starters.
+                _logger.debug("Reading bytes of buffer: [%d, %d)." % (bytes_to_skip, bytes_to_skip + bytes_to_read))
                 retval += buf[bytes_to_skip:bytes_to_skip + bytes_to_read]
             bytes_to_skip -= blen
 
@@ -298,4 +300,3 @@ Userspace DFXML file system.
 
 if __name__ == '__main__':
     main()
-
