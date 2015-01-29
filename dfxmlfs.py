@@ -157,6 +157,7 @@ class DFXMLFS(fuse.Fuse):
 
             #Shorten reading DFXML files in debug settings
             if "debug" in self.fuse_args.optlist and tup_no > 50:
+                _logger.debug("Shortening object parsing while in debug mode: Only 50 file objects read from XML.")
                 break
 
         #Assign inode numbers for objects that were in the stream first
