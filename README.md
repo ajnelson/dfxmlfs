@@ -41,5 +41,5 @@ The `imgfile` option provides the path to the disk image that the XML file repre
 
 * Mounting *does* work.
 * Walking the directory tree *does* work.
-* Extracting file contents *doesn't* work, but will.
+* Extracting file contents *somewhat* works.  Currently slow on big files.
 * Writing anywhere in the file system *will never* work.  This is meant to be a read-only file system.
