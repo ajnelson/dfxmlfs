@@ -135,7 +135,7 @@ class DFXMLFS(fuse.Fuse):
             if obj.filename is None:
                 #_logger.debug("Null filename.")
                 continue
-            if obj.filename in [".", ".."]:
+            if obj.filename.endswith(("/.", "/..")) or obj.filename in [".", ".."]:
                 #_logger.debug("Dot-dir filename.")
                 continue
 
