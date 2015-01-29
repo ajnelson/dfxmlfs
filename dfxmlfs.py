@@ -189,7 +189,7 @@ class DFXMLFS(fuse.Fuse):
         if path == '/':
             st = fuse.Stat()
             st.st_mode = stat.S_IFDIR | 0o555
-            st.st_nlink = 2
+            st.st_nlink = len(self.dir_lists_by_path["/"])
         else:
             obj = self.objects_by_path.get(path)
             if obj is None:
