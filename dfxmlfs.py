@@ -251,6 +251,11 @@ class DFXMLFS(fuse.Fuse):
             return bytes()
         #_logger.debug("File size check passed.")
 
+        #Compression awaits updates to the core DFXML library.
+        if obj.compressed:
+            _logger.info("Cannot currently read NTFS-compressed files.")
+            return -errno.EOPNOTSUPP
+
         #Data addresses check
         retval = bytes()
         bytes_to_skip = offset
